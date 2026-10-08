@@ -1,0 +1,23 @@
+{
+  "name": "花费",
+  "short_name": "花费",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#f2f2f7",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

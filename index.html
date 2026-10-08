@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#f2f2f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="花费">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>花费</title>
+<style>
+:root{
+ --bg:#f2f2f7;--surface:#fff;--text:#1c1c1e;--secondary:#8e8e93;
+ --tertiary:#c7c7cc;--separator:#e5e5ea;--blue:#007aff;
+ --shadow:0 1px 2px rgba(0,0,0,.035),0 7px 24px rgba(0,0,0,.025);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Arial,sans-serif;font-variant-numeric:tabular-nums}
+button,input{font:inherit}
+button{border:0}
+.app{max-width:640px;margin:auto;padding:calc(10px + env(safe-area-inset-top)) 16px calc(34px + env(safe-area-inset-bottom))}
+.topbar{height:48px;display:flex;align-items:center;justify-content:space-between}
+.appName{font-size:17px;font-weight:650;letter-spacing:-.2px}
+.monthSwitcher{display:flex;align-items:center;gap:2px}
+.monthButton{width:38px;height:38px;border-radius:19px;background:rgba(255,255,255,.72);color:#6f6f74;font-size:28px;line-height:30px;display:flex;align-items:center;justify-content:center}
+.monthButton:active{background:#e5e5ea;transform:scale(.94)}
+.monthLabel{min-width:108px;text-align:center;font-size:17px;font-weight:650;letter-spacing:-.25px}
+.hero{margin-top:5px;margin-bottom:14px;padding:24px 22px 25px;border-radius:25px;background:#1c1c1e;color:#fff;box-shadow:var(--shadow)}
+.heroCaption{font-size:13px;color:#a9a9ad;margin-bottom:8px}
+.heroTotal{font-size:42px;line-height:1.05;font-weight:700;letter-spacing:-1.8px}
+.heroSub{display:flex;gap:18px;margin-top:18px;font-size:12px;color:#9d9da2}
+.heroSub b{color:#e8e8eb;font-weight:600;margin-left:4px}
+.card{background:var(--surface);border-radius:24px;box-shadow:var(--shadow);overflow:hidden}
+.calendarCard{padding:14px 9px 10px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);height:27px;align-items:center;text-align:center;color:#8e8e93;font-size:11px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.day{position:relative;min-height:62px;border-radius:15px;display:flex;flex-direction:column;align-items:center;padding-top:6px;cursor:pointer}
+.day:active{background:#f2f2f7;transform:scale(.98)}
+.day.empty{pointer-events:none}
+.num{width:29px;height:29px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500}
+.today .num{background:#1c1c1e;color:#fff;border-radius:50%;font-weight:650}
+.amount{font-size:10px;color:#55555a;font-weight:600;margin-top:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.selected{background:#f2f2f7}
+.selected .num{font-weight:700}
+.section{margin-top:20px}
+.sectionHeader{display:flex;justify-content:space-between;align-items:baseline;padding:0 4px 9px}
+.sectionTitle{font-size:19px;font-weight:700;letter-spacing:-.45px}
+.sectionTotal{font-size:14px;color:var(--secondary);font-weight:550}
+.list{background:var(--surface);border-radius:22px;overflow:hidden}
+.row{min-height:54px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--separator)}
+.row:last-child{border-bottom:0}
+.rowLeft{min-width:0;display:flex;align-items:baseline;overflow:hidden}
+.rowAmount{font-size:17px;font-weight:520;letter-spacing:-.2px}
+.rowNote{font-size:13px;color:var(--secondary);margin-left:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.delete{color:#b5b5ba;font-size:24px;line-height:1;padding:7px 1px 7px 12px}
+.delete:active{color:#ff3b30}
+.empty{padding:17px 16px;color:var(--secondary);font-size:14px}
+.addBar{display:flex;gap:8px;margin-top:8px}
+.input{height:49px;flex:1;min-width:0;border:0;outline:0;border-radius:17px;background:#fff;box-shadow:var(--shadow);padding:0 16px;color:var(--text);font-size:17px}
+.input::placeholder{color:#aeaeb2}
+.add{height:49px;min-width:72px;border-radius:17px;background:var(--blue);color:#fff;font-size:15px;font-weight:650;box-shadow:0 4px 10px rgba(0,122,255,.18)}
+.add:active{transform:scale(.97);filter:brightness(.93)}
+.helper{font-size:12px;color:#a0a0a5;padding:7px 5px 0;line-height:1.4}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--surface);border-radius:20px;padding:16px;box-shadow:var(--shadow)}
+.statLabel{font-size:12px;color:var(--secondary);margin-bottom:7px}
+.statValue{font-size:21px;font-weight:700;letter-spacing:-.5px}
+.footer{text-align:center;color:#b0b0b5;font-size:11px;padding:25px 0 0}
+@media(max-width:370px){.day{min-height:57px}.heroTotal{font-size:37px}.monthLabel{min-width:96px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="appName">花费</div>
+    <div class="monthSwitcher">
+      <button class="monthButton" id="prev" aria-label="上个月">‹</button>
+      <div class="monthLabel" id="monthLabel"></div>
+      <button class="monthButton" id="next" aria-label="下个月">›</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="heroCaption">本月支出</div>
+    <div class="heroTotal" id="monthTotal">¥0</div>
+    <div class="heroSub">
+      <span>每日 <b id="dailyHero">¥0</b></span>
+      <span>其他 <b id="otherHero">¥0</b></span>
+    </div>
+  </section>
+
+  <section class="card calendarCard">
+    <div class="week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+    <div class="grid" id="calendar"></div>
+  </section>
+
+  <section class="section">
+    <div class="sectionHeader">
+      <div class="sectionTitle" id="dayTitle">1月1日</div>
+      <div class="sectionTotal" id="dayTotal">¥0</div>
+    </div>
+    <div class="list" id="dayList"></div>
+    <div class="addBar">
+      <input class="input" id="dayInput" inputmode="decimal" autocomplete="off" placeholder="金额">
+      <button class="add" id="dayAdd">添加</button>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="sectionHeader">
+      <div class="sectionTitle">其他支出</div>
+      <div class="sectionTotal" id="otherTotal">¥0</div>
+    </div>
+    <div class="list" id="otherList"></div>
+    <div class="addBar">
+      <input class="input" id="otherInput" inputmode="decimal" autocomplete="off" placeholder="金额，可加备注">
+      <button class="add" id="otherAdd">添加</button>
+    </div>
+    <div class="helper">例如：68 Spotify</div>
+  </section>
+
+  <section class="section">
+    <div class="sectionHeader"><div class="sectionTitle">月度统计</div></div>
+    <div class="stats">
+      <div class="stat"><div class="statLabel">每日支出</div><div class="statValue" id="dailyStat">¥0</div></div>
+      <div class="stat"><div class="statLabel">其他支出</div><div class="statValue" id="otherStat">¥0</div></div>
+    </div>
+  </section>
+
+  <div class="footer">数据保存在本机 · 无需账号</div>
+</div>
+
+<script>
+const KEY="simple-expenses-v2";
+let db=JSON.parse(localStorage.getItem(KEY)||"{}");
+let view=new Date();view.setDate(1);
+let selectedKey=null;
+const pad=n=>String(n).padStart(2,"0");
+const money=n=>"¥"+Number(n||0).toLocaleString("zh-CN",{minimumFractionDigits:0,maximumFractionDigits:2});
+const monthKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+const dayKey=(y,m,d)=>`${y}-${pad(m)}-${pad(d)}`;
+const sum=a=>(a||[]).reduce((s,x)=>s+Number(x.amount||0),0);
+function ensure(){const k=monthKey(view);if(!db[k])db[k]={days:{},other:[]};return db[k]}
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function dailyTotal(md){return Object.values(md.days).reduce((s,a)=>s+sum(a),0)}
+function render(){
+ const md=ensure(),y=view.getFullYear(),m=view.getMonth()+1;
+ const dt=dailyTotal(md),ot=sum(md.other);
+ document.getElementById("monthLabel").textContent=`${y}年 ${m}月`;
+ document.getElementById("monthTotal").textContent=money(dt+ot);
+ document.getElementById("dailyHero").textContent=money(dt);
+ document.getElementById("otherHero").textContent=money(ot);
+ document.getElementById("dailyStat").textContent=money(dt);
+ document.getElementById("otherStat").textContent=money(ot);
+ if(!selectedKey||!selectedKey.startsWith(monthKey(view))){
+   const now=new Date();
+   selectedKey=(now.getFullYear()===y&&now.getMonth()+1===m)?dayKey(y,m,now.getDate()):dayKey(y,m,1);
+ }
+ renderCalendar(y,m,md);renderDay(md);renderOther(md);save();
+}
+function renderCalendar(y,m,md){
+ const el=document.getElementById("calendar");el.innerHTML="";
+ const first=new Date(y,m-1,1),start=(first.getDay()+6)%7,days=new Date(y,m,0).getDate(),now=new Date();
+ for(let i=0;i<start;i++){const e=document.createElement("div");e.className="day empty";el.appendChild(e)}
+ for(let d=1;d<=days;d++){
+   const key=dayKey(y,m,d),total=sum(md.days[key]||[]);
+   const e=document.createElement("div");e.className="day"+(key===selectedKey?" selected":"");
+   if(y===now.getFullYear()&&m===now.getMonth()+1&&d===now.getDate())e.classList.add("today");
+   e.innerHTML=`<div class="num">${d}</div>${total?`<div class="amount">${money(total)}</div>`:""}`;
+   e.onclick=()=>{selectedKey=key;renderCalendar(y,m,md);renderDay(md)};
+   el.appendChild(e);
+ }
+}
+function renderDay(md){
+ const parts=selectedKey.split("-"),m=Number(parts[1]),d=Number(parts[2]),vals=md.days[selectedKey]||[];
+ document.getElementById("dayTitle").textContent=`${m}月${d}日`;
+ document.getElementById("dayTotal").textContent=money(sum(vals));
+ const list=document.getElementById("dayList");list.innerHTML="";
+ if(!vals.length){list.innerHTML='<div class="empty">还没有记录</div>';return}
+ vals.forEach((x,i)=>{
+   const row=document.createElement("div");row.className="row";
+   row.innerHTML=`<div class="rowLeft"><span class="rowAmount">${money(x.amount)}</span></div><button class="delete">×</button>`;
+   row.querySelector(".delete").onclick=()=>{vals.splice(i,1);if(!vals.length)delete md.days[selectedKey];save();render()};
+   list.appendChild(row);
+ });
+}
+function renderOther(md){
+ const list=document.getElementById("otherList");list.innerHTML="";
+ if(!md.other.length){list.innerHTML='<div class="empty">还没有记录</div>';return}
+ md.other.forEach((x,i)=>{
+   const row=document.createElement("div");row.className="row";
+   row.innerHTML=`<div class="rowLeft"><span class="rowAmount">${money(x.amount)}</span>${x.note?`<span class="rowNote">${escapeHtml(x.note)}</span>`:""}</div><button class="delete">×</button>`;
+   row.querySelector(".delete").onclick=()=>{md.other.splice(i,1);save();render()};
+   list.appendChild(row);
+ });
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function addDay(){
+ const input=document.getElementById("dayInput"),v=parseFloat(input.value.replace(/,/g,""));
+ if(!Number.isFinite(v)||v<=0)return;
+ const md=ensure();(md.days[selectedKey]||(md.days[selectedKey]=[])).push({amount:v,t:Date.now()});
+ input.value="";save();render();setTimeout(()=>document.getElementById("dayInput").focus(),30);
+}
+function addOther(){
+ const input=document.getElementById("otherInput"),raw=input.value.trim(),match=raw.match(/^([0-9]+(?:\.[0-9]+)?)(?:\s+(.+))?$/);
+ if(!match)return;
+ ensure().other.push({amount:parseFloat(match[1]),note:match[2]||"",t:Date.now()});
+ input.value="";save();render();setTimeout(()=>document.getElementById("otherInput").focus(),30);
+}
+document.getElementById("prev").onclick=()=>{view.setMonth(view.getMonth()-1);selectedKey=null;render()};
+document.getElementById("next").onclick=()=>{view.setMonth(view.getMonth()+1);selectedKey=null;render()};
+document.getElementById("dayAdd").onclick=addDay;
+document.getElementById("otherAdd").onclick=addOther;
+document.getElementById("dayInput").addEventListener("keydown",e=>{if(e.key==="Enter")addDay()});
+document.getElementById("otherInput").addEventListener("keydown",e=>{if(e.key==="Enter")addOther()});
+let touchX=0;
+document.addEventListener("touchstart",e=>{touchX=e.changedTouches[0].screenX},{passive:true});
+document.addEventListener("touchend",e=>{
+ const dx=e.changedTouches[0].screenX-touchX;
+ if(Math.abs(dx)>80&&Math.abs(dx)>Math.abs(e.changedTouches[0].screenY-(e.changedTouches[0].screenY-dx))){
+   view.setMonth(view.getMonth()+(dx<0?1:-1));selectedKey=null;render();
+ }
+},{passive:true});
+render();
+</script>
+</body>
+</html>
