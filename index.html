@@ -13,7 +13,7 @@
 <style>
 :root{
  --bg:#f2f2f7;--surface:#fff;--text:#1c1c1e;--secondary:#8e8e93;
- --tertiary:#c7c7cc;--separator:#e5e5ea;--blue:#007aff;
+ --tertiary:#c7c7cc;--separator:#e5e5ea;--blue:#007aff;--red:#ff3b30;
  --shadow:0 1px 2px rgba(0,0,0,.035),0 7px 24px rgba(0,0,0,.025);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -50,19 +50,37 @@ button{border:0}
 .sectionTitle{font-size:19px;font-weight:700;letter-spacing:-.45px}
 .sectionTotal{font-size:14px;color:var(--secondary);font-weight:550}
 .list{background:var(--surface);border-radius:22px;overflow:hidden}
-.row{min-height:54px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--separator)}
-.row:last-child{border-bottom:0}
+.swipeShell{position:relative;overflow:hidden;border-bottom:1px solid var(--separator);background:var(--red)}
+.swipeShell:last-child{border-bottom:0}
+.deleteAction{position:absolute;inset:0 0 0 auto;width:82px;display:flex;align-items:center;justify-content:center;background:var(--red);color:#fff;font-size:14px;font-weight:600;letter-spacing:.2px;transform:translateX(100%);transition:transform .2s ease;z-index:0}
+.swipeShell.revealed .deleteAction{transform:translateX(0)}
+.row{min-height:58px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:relative;z-index:1;touch-action:pan-y;transition:transform .2s ease;will-change:transform}
 .rowLeft{min-width:0;display:flex;align-items:baseline;overflow:hidden}
-.rowAmount{font-size:17px;font-weight:520;letter-spacing:-.2px}
+.rowAmount{font-size:17px;font-weight:520;letter-spacing:-.2px;flex-shrink:0}
 .rowNote{font-size:13px;color:var(--secondary);margin-left:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.delete{color:#b5b5ba;font-size:24px;line-height:1;padding:7px 1px 7px 12px}
-.delete:active{color:#ff3b30}
+.deleteAction:active{filter:brightness(.9)}
 .empty{padding:17px 16px;color:var(--secondary);font-size:14px}
 .addBar{display:flex;gap:8px;margin-top:8px}
 .input{height:49px;flex:1;min-width:0;border:0;outline:0;border-radius:17px;background:#fff;box-shadow:var(--shadow);padding:0 16px;color:var(--text);font-size:17px}
+.budgetCard{margin:0 0 14px;background:#fff;border-radius:21px;padding:15px 17px;box-shadow:var(--shadow)}
+.budgetTop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.budgetLabel{font-size:13px;color:var(--secondary);font-weight:550}
+.budgetEdit{font-size:13px;color:var(--blue);background:transparent;padding:5px 0 5px 8px}
+.budgetNumbers{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:7px}
+.budgetRemain{font-size:25px;font-weight:700;letter-spacing:-.7px}
+.budgetMeta{font-size:12px;color:var(--secondary);text-align:right}
+.progressTrack{height:5px;background:#e9e9ee;border-radius:99px;overflow:hidden;margin-top:12px}
+.progressFill{height:100%;width:0;background:#34c759;border-radius:99px;transition:width .25s ease,background .25s ease}
+.budgetOver .budgetRemain{color:var(--red)}
+.budgetOver .progressFill{background:var(--red)}
+.noteInput{height:49px;flex:1;min-width:0;border:0;outline:0;border-radius:17px;background:#fff;box-shadow:var(--shadow);padding:0 13px;color:var(--text);font-size:15px}
+.noteInput::placeholder{color:#aeaeb2}
 .input::placeholder{color:#aeaeb2}
 .add{height:49px;min-width:72px;border-radius:17px;background:var(--blue);color:#fff;font-size:15px;font-weight:650;box-shadow:0 4px 10px rgba(0,122,255,.18)}
-.add:active{transform:scale(.97);filter:brightness(.93)}
+.add{transition:transform .16s ease,filter .16s ease,box-shadow .16s ease}
+.add:active,.add.isAdding{transform:scale(.94);filter:brightness(.9);box-shadow:0 1px 4px rgba(0,122,255,.22)}
+@keyframes addPop{0%{transform:scale(1)}45%{transform:scale(.92)}100%{transform:scale(1)}}
+.add.pop{animation:addPop .24s ease}
 .helper{font-size:12px;color:#a0a0a5;padding:7px 5px 0;line-height:1.4}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .stat{background:var(--surface);border-radius:20px;padding:16px;box-shadow:var(--shadow)}
@@ -92,6 +110,12 @@ button{border:0}
     </div>
   </section>
 
+  <section class="budgetCard" id="budgetCard">
+    <div class="budgetTop"><div class="budgetLabel">本月预算</div><button class="budgetEdit" id="budgetEdit">设置预算</button></div>
+    <div class="budgetNumbers"><div class="budgetRemain" id="budgetRemain">未设置</div><div class="budgetMeta" id="budgetMeta">设置后显示剩余预算</div></div>
+    <div class="progressTrack"><div class="progressFill" id="budgetProgress"></div></div>
+  </section>
+
   <section class="card calendarCard">
     <div class="week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
     <div class="grid" id="calendar"></div>
@@ -116,10 +140,11 @@ button{border:0}
     </div>
     <div class="list" id="otherList"></div>
     <div class="addBar">
-      <input class="input" id="otherInput" inputmode="decimal" autocomplete="off" placeholder="金额，可加备注">
+      <input class="input" id="otherInput" inputmode="decimal" autocomplete="off" placeholder="金额" aria-label="其他支出金额">
+      <input class="noteInput" id="otherNote" type="text" inputmode="text" autocomplete="off" placeholder="备注（选填）" aria-label="其他支出备注">
       <button class="add" id="otherAdd">添加</button>
     </div>
-    <div class="helper">例如：68 Spotify</div>
+    <div class="helper">例如：金额 68 · 备注 Spotify 会员</div>
   </section>
 
   <section class="section">
@@ -150,6 +175,7 @@ function render(){
  const md=ensure(),y=view.getFullYear(),m=view.getMonth()+1;
  const dt=dailyTotal(md),ot=sum(md.other);
  document.getElementById("monthLabel").textContent=`${y}年 ${m}月`;
+ renderBudget(md,dt+ot);
  document.getElementById("monthTotal").textContent=money(dt+ot);
  document.getElementById("dailyHero").textContent=money(dt);
  document.getElementById("otherHero").textContent=money(ot);
@@ -181,50 +207,75 @@ function renderDay(md){
  const list=document.getElementById("dayList");list.innerHTML="";
  if(!vals.length){list.innerHTML='<div class="empty">还没有记录</div>';return}
  vals.forEach((x,i)=>{
+   const shell=document.createElement("div");shell.className="swipeShell";
+   const del=document.createElement("button");del.className="deleteAction";del.textContent="删除";del.setAttribute("aria-label","删除这笔支出");
    const row=document.createElement("div");row.className="row";
-   row.innerHTML=`<div class="rowLeft"><span class="rowAmount">${money(x.amount)}</span></div><button class="delete">×</button>`;
-   row.querySelector(".delete").onclick=()=>{vals.splice(i,1);if(!vals.length)delete md.days[selectedKey];save();render()};
-   list.appendChild(row);
+   row.innerHTML=`<div class="rowLeft"><span class="rowAmount">${money(x.amount)}</span></div>`;
+   shell.append(del,row);wireSwipe(shell,row,()=>{vals.splice(i,1);if(!vals.length)delete md.days[selectedKey];save();render()});list.appendChild(shell);
  });
 }
 function renderOther(md){
  const list=document.getElementById("otherList");list.innerHTML="";
  if(!md.other.length){list.innerHTML='<div class="empty">还没有记录</div>';return}
  md.other.forEach((x,i)=>{
+   const shell=document.createElement("div");shell.className="swipeShell";
+   const del=document.createElement("button");del.className="deleteAction";del.textContent="删除";del.setAttribute("aria-label","删除这笔支出");
    const row=document.createElement("div");row.className="row";
-   row.innerHTML=`<div class="rowLeft"><span class="rowAmount">${money(x.amount)}</span>${x.note?`<span class="rowNote">${escapeHtml(x.note)}</span>`:""}</div><button class="delete">×</button>`;
-   row.querySelector(".delete").onclick=()=>{md.other.splice(i,1);save();render()};
-   list.appendChild(row);
+   row.innerHTML=`<div class="rowLeft"><span class="rowAmount">${money(x.amount)}</span>${x.note?`<span class="rowNote">${escapeHtml(x.note)}</span>`:""}</div>`;
+   shell.append(del,row);wireSwipe(shell,row,()=>{md.other.splice(i,1);save();render()});list.appendChild(shell);
  });
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function wireSwipe(shell,row,onDelete){
+ const width=82;let startX=0,startY=0,base=0,tracking=false;
+ const del=shell.querySelector(".deleteAction");
+ const setX=x=>{const v=Math.max(-width,Math.min(0,x));row.style.transform=`translateX(${v}px)`;shell.classList.toggle("revealed",v< -width/2);row.dataset.offset=v;};
+ del.onclick=onDelete;
+ row.addEventListener("touchstart",e=>{startX=e.touches[0].clientX;startY=e.touches[0].clientY;base=Number(row.dataset.offset||0);tracking=true;row.style.transition="none"},{passive:true});
+ row.addEventListener("touchmove",e=>{if(!tracking)return;const dx=e.touches[0].clientX-startX,dy=e.touches[0].clientY-startY;if(Math.abs(dy)>Math.abs(dx)+5){tracking=false;row.style.transition="";return}if(Math.abs(dx)>4){setX(base+dx)}},{passive:true});
+ row.addEventListener("touchend",()=>{if(!tracking)return;tracking=false;row.style.transition="";const x=Number(row.dataset.offset||0);setX(x< -width/2?-width:0)});
+ row.addEventListener("click",()=>{if(shell.classList.contains("revealed")){setX(0)}});
+}
+function renderBudget(md,total){
+ const budget=Number(md.budget||0),card=document.getElementById("budgetCard"),remain=document.getElementById("budgetRemain"),meta=document.getElementById("budgetMeta"),fill=document.getElementById("budgetProgress");
+ card.classList.toggle("budgetOver",budget>0&&total>budget);
+ if(!budget){remain.textContent="未设置";meta.textContent="设置后显示剩余预算";fill.style.width="0%";return}
+ const left=budget-total;remain.textContent=money(left);meta.textContent=`预算 ${money(budget)} · 已用 ${Math.min(100,Math.round(total/budget*100))}%`;
+ fill.style.width=`${Math.min(100,total/budget*100)}%`;
+}
+function addFeedback(btn){btn.classList.remove("pop");void btn.offsetWidth;btn.classList.add("pop");setTimeout(()=>btn.classList.remove("pop"),260)}
 function addDay(){
+ addFeedback(document.getElementById("dayAdd"));
  const input=document.getElementById("dayInput"),v=parseFloat(input.value.replace(/,/g,""));
  if(!Number.isFinite(v)||v<=0)return;
  const md=ensure();(md.days[selectedKey]||(md.days[selectedKey]=[])).push({amount:v,t:Date.now()});
  input.value="";save();render();setTimeout(()=>document.getElementById("dayInput").focus(),30);
 }
 function addOther(){
- const input=document.getElementById("otherInput"),raw=input.value.trim(),match=raw.match(/^([0-9]+(?:\.[0-9]+)?)(?:\s+(.+))?$/);
- if(!match)return;
- ensure().other.push({amount:parseFloat(match[1]),note:match[2]||"",t:Date.now()});
- input.value="";save();render();setTimeout(()=>document.getElementById("otherInput").focus(),30);
+ addFeedback(document.getElementById("otherAdd"));
+ const input=document.getElementById("otherInput"),noteInput=document.getElementById("otherNote"),v=parseFloat(input.value.replace(/,/g,""));
+ if(!Number.isFinite(v)||v<=0){input.focus();return}
+ ensure().other.push({amount:v,note:noteInput.value.trim(),t:Date.now()});
+ input.value="";noteInput.value="";save();render();setTimeout(()=>document.getElementById("otherInput").focus(),30);
 }
 document.getElementById("prev").onclick=()=>{view.setMonth(view.getMonth()-1);selectedKey=null;render()};
 document.getElementById("next").onclick=()=>{view.setMonth(view.getMonth()+1);selectedKey=null;render()};
 document.getElementById("dayAdd").onclick=addDay;
 document.getElementById("otherAdd").onclick=addOther;
 document.getElementById("dayInput").addEventListener("keydown",e=>{if(e.key==="Enter")addDay()});
-document.getElementById("otherInput").addEventListener("keydown",e=>{if(e.key==="Enter")addOther()});
+document.getElementById("otherInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();document.getElementById("otherNote").focus()}});
+document.getElementById("otherNote").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addOther()}});
+document.getElementById("budgetEdit").onclick=()=>{const md=ensure(),current=md.budget||"",answer=prompt("请输入本月预算金额（留空或输入 0 表示不设置）",current?String(current):"");if(answer===null)return;const v=parseFloat(String(answer).replace(/,/g,""));md.budget=Number.isFinite(v)&&v>0?v:0;save();render()};
 let touchX=0;
-document.addEventListener("touchstart",e=>{touchX=e.changedTouches[0].screenX},{passive:true});
+let touchY=0,touchTarget=null;
+document.addEventListener("touchstart",e=>{touchX=e.changedTouches[0].screenX;touchY=e.changedTouches[0].screenY;touchTarget=e.target},{passive:true});
 document.addEventListener("touchend",e=>{
- const dx=e.changedTouches[0].screenX-touchX;
- if(Math.abs(dx)>80&&Math.abs(dx)>Math.abs(e.changedTouches[0].screenY-(e.changedTouches[0].screenY-dx))){
-   view.setMonth(view.getMonth()+(dx<0?1:-1));selectedKey=null;render();
- }
+ const dx=e.changedTouches[0].screenX-touchX,dy=e.changedTouches[0].screenY-touchY;
+ if(touchTarget&&touchTarget.closest&&touchTarget.closest(".row,.swipeShell,.addBar,.calendarCard"))return;
+ if(Math.abs(dx)>100&&Math.abs(dx)>Math.abs(dy)*1.5){view.setMonth(view.getMonth()+(dx<0?1:-1));selectedKey=null;render()}
 },{passive:true});
 render();
+if ("serviceWorker" in navigator && location.protocol !== "file:") { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(()=>{})); }
 </script>
 </body>
 </html>
